@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tracker Zone</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f7f7f7;
+        }
+        .container {
+            max-width: 56%; /* Reduced by 20% from 70% */
+            margin: 0 auto;
+            background: white;
+            padding: 16px; /* Reduced padding */
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        textarea {
+            width: calc(100% - 16px); /* Full width minus reduced padding */
+            height: 160px; /* Reduced height */
+            margin: 0 auto 16px; /* Center horizontally */
+            padding: 8px; /* Reduced padding */
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 12px; /* Reduced font size */
+            display: block; /* Block element to center */
+            box-sizing: border-box; /* Include padding and border in width calculation */
+        }
+        button {
+            display: block;
+            width: 100%;
+            padding: 8px; /* Reduced padding */
+            margin-bottom: 8px; /* Reduced margin */
+            background-color: #28a745;
+            border: none;
+            border-radius: 4px;
+            color: white;
+            font-size: 14px; /* Reduced font size */
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        .output {
+            margin-top: 16px; /* Reduced margin */
+            padding: 8px; /* Reduced padding */
+            background-color: #f1f1f1;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            white-space: pre-wrap;
+        }
+        .hidden {
+            display: none;
+        }
+        .popup {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #28a745;
+            color: white;
+            padding: 8px 16px; /* Reduced padding */
+            border-radius: 4px;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+        .popup.show {
+            opacity: 1;
+        }
+        .tracker-count {
+            margin-top: 8px; /* Reduced margin */
+            font-size: 14px; /* Reduced font size */
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Tracker Zone</h1>
+        <form id="tracker-form">
+            <textarea id="tracker-input" placeholder="Paste your tracker list here..."></textarea>
+            <button type="submit">Format Trackers</button>
+        </form>
+        <button id="fetch-button">Fetch Trackers from URL</button>
+        <button id="copy-button" class="hidden">Copy All</button>
+        <div class="output" id="tracker-output"></div>
+        <div class="tracker-count" id="tracker-count">Total Trackers: 0</div>
+    </div>
+    <div class="popup" id="popup-message"></div>
+    <script>
+        function showPopup(message) {
+            const popup = document.getElementById('popup-message');
+            popup.textContent = message;
+            popup.classList.add('show');
+            setTimeout(() => {
+                popup.classList.remove('show');
+            }, 3000); // Popup duration: 3 seconds
+        }
+
+        document.getElementById('tracker-form').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const input = document.getElementById('tracker-input').value;
+            console.log('Input trackers:', input);
+            fetch('/format', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ trackers: input })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Formatted trackers:', data.formattedTrackers);
+                document.getElementById('tracker-output').textContent = data.formattedTrackers;
+                document.getElementById('copy-button').classList.remove('hidden');
+                // Update tracker count
+                const formattedTrackers = data.formattedTrackers.split('\n').filter(Boolean);
+                document.getElementById('tracker-count').textContent = `Total Trackers: ${formattedTrackers.length}`;
+                showPopup('Trackers Formatted');
+            })
+            .catch(err => {
+                console.error('Error formatting trackers:', err);
+            });
+        });
+
+        document.getElementById('fetch-button').addEventListener('click', function () {
+            console.log('Fetching trackers from URL...');
+            fetch('/fetch')
+            .then(response => response.json())
+            .then(data => {
+                console.log('Fetched trackers:', data.formattedTrackers);
+                document.getElementById('tracker-output').textContent = data.formattedTrackers;
+                document.getElementById('copy-button').classList.remove('hidden');
+                // Update tracker count
+                const formattedTrackers = data.formattedTrackers.split('\n').filter(Boolean);
+                document.getElementById('tracker-count').textContent = `Total Trackers: ${formattedTrackers.length}`;
+                showPopup('Fetched Latest Trackers');
+            })
+            .catch(err => {
+                console.error('Error fetching trackers:', err);
+            });
+        });
+
+        document.getElementById('copy-button').addEventListener('click', function () {
+            const output = document.getElementById('tracker-output').textContent;
+            navigator.clipboard.writeText(output).then(() => {
+                showPopup('Trackers Copied');
+            }).catch(err => {
+                console.error('Failed to copy text: ', err);
+            });
+        });
+    </script>
+</body>
+</html>
