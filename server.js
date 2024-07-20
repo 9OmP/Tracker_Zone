@@ -11,7 +11,8 @@ app.use(express.static('public'));
 // Handle formatting request
 app.post('/format', (req, res) => {
     const trackers = req.body.trackers.split(/\s+/).filter(Boolean);
-    const formattedTrackers = trackers.join('\n\n');
+    const uniqueTrackers = [...new Set(trackers)]; // Remove duplicates
+    const formattedTrackers = uniqueTrackers.join('\n\n');
     res.json({ formattedTrackers });
 });
 
@@ -19,7 +20,7 @@ app.post('/format', (req, res) => {
 app.get('/fetch', async (req, res) => {
     try {
         console.log('Fetching trackers...');
-        
+
         // Fetch data from the first source
         const trackersListResponse = await axios.get('https://raw.githubusercontent.com/ngosang/trackerslist/master/trackers_all.txt');
         const trackersText = trackersListResponse.data.trim();
@@ -39,7 +40,7 @@ app.get('/fetch', async (req, res) => {
         console.log('Trackers from newTrackon:', newTrackonTrackers.length);
         console.log('Trackers from trackers_all:', trackersList.length);
 
-        // Combine and format trackers
+        // Combine and remove duplicates
         const combinedTrackers = [...new Set([...trackersList, ...newTrackonTrackers])];
         const formattedTrackers = combinedTrackers.join('\n\n');
 
