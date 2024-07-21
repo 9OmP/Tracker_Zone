@@ -89,8 +89,8 @@
         </form>
         <button id="fetch-button">Fetch Trackers from URL</button>
         <button id="copy-button" class="hidden">Copy All</button>
-        <div class="tracker-count" id="tracker-count">Total Trackers: 0</div>
         <div class="output" id="tracker-output"></div>
+        <div class="tracker-count" id="tracker-count">Total Trackers: 0</div>
     </div>
     <div class="popup" id="popup-message"></div>
     <script>
@@ -103,48 +103,47 @@
             }, 3000); // Popup duration: 3 seconds
         }
 
+        function formatTrackers(trackers) {
+            const uniqueTrackers = [...new Set(trackers.split(/\s+/).filter(Boolean))];
+            return uniqueTrackers.join('\n\n');
+        }
+
         document.getElementById('tracker-form').addEventListener('submit', function (e) {
             e.preventDefault();
             const input = document.getElementById('tracker-input').value;
-            console.log('Input trackers:', input);
-            fetch('/format', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ trackers: input })
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log('Formatted trackers:', data.formattedTrackers);
-                document.getElementById('tracker-output').textContent = data.formattedTrackers;
-                document.getElementById('copy-button').classList.remove('hidden');
-                // Update tracker count
-                const formattedTrackers = data.formattedTrackers.split('\n').filter(Boolean);
-                document.getElementById('tracker-count').textContent = `Total Trackers: ${formattedTrackers.length}`;
-                showPopup('Trackers Formatted');
-            })
-            .catch(err => {
-                console.error('Error formatting trackers:', err);
-            });
+            const formattedTrackers = formatTrackers(input);
+            document.getElementById('tracker-output').textContent = formattedTrackers;
+            document.getElementById('copy-button').classList.remove('hidden');
+            document.getElementById('tracker-count').textContent = `Total Trackers: ${formattedTrackers.split('\n\n').length}`;
+            showPopup('Trackers Formatted');
         });
 
         document.getElementById('fetch-button').addEventListener('click', function () {
-            console.log('Fetching trackers from URL...');
-            fetch('/fetch')
-            .then(response => response.json())
-            .then(data => {
-                console.log('Fetched trackers:', data.formattedTrackers);
-                document.getElementById('tracker-output').textContent = data.formattedTrackers;
-                document.getElementById('copy-button').classList.remove('hidden');
-                // Update tracker count
-                const formattedTrackers = data.formattedTrackers.split('\n').filter(Boolean);
-                document.getElementById('tracker-count').textContent = `Total Trackers: ${formattedTrackers.length}`;
-                showPopup('Fetched Latest Trackers');
-            })
-            .catch(err => {
-                console.error('Error fetching trackers:', err);
-            });
+            const fetchTrackers = async () => {
+                try {
+                    const [trackersListResponse, newTrackonResponse] = await Promise.all([
+                        fetch('https://raw.githubusercontent.com/ngosang/trackerslist/master/trackers_all.txt'),
+                        fetch('https://newtrackon.com/api/live')
+                    ]);
+
+                    const trackersListText = await trackersListResponse.text();
+                    const newTrackonText = await newTrackonResponse.text();
+
+                    const trackersList = trackersListText.trim().split(/\s+/).filter(Boolean);
+                    const newTrackonTrackers = newTrackonText.trim().split('\n').filter(Boolean);
+
+                    const combinedTrackers = [...new Set([...trackersList, ...newTrackonTrackers])];
+                    const formattedTrackers = combinedTrackers.join('\n\n');
+
+                    document.getElementById('tracker-output').textContent = formattedTrackers;
+                    document.getElementById('copy-button').classList.remove('hidden');
+                    document.getElementById('tracker-count').textContent = `Total Trackers: ${formattedTrackers.split('\n\n').length}`;
+                    showPopup('Fetched Latest Trackers');
+                } catch (err) {
+                    console.error('Error fetching trackers:', err);
+                }
+            };
+            fetchTrackers();
         });
 
         document.getElementById('copy-button').addEventListener('click', function () {
