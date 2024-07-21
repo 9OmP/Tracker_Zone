@@ -1,12 +1,20 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const axios = require('axios');
+const path = require('path');
 
 const app = express();
 const port = 3000;
 
 app.use(bodyParser.json());
-app.use(express.static('public'));
+
+// Serve index.html from the root directory
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// Serve other static files from the root directory
+app.use(express.static(__dirname));
 
 // Handle formatting request
 app.post('/format', (req, res) => {
